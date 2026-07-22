@@ -1,4 +1,4 @@
-// AI人格项目 - AI聊天引擎（接入真实AI）
+// AI人格项目 - AI聊天引擎（拟人化版本）
 
 import * as fs from 'fs'
 import * as path from 'path'
@@ -16,7 +16,7 @@ const PROVIDERS: Record<string, { baseUrl: string; model: string }> = {
   agnes: { baseUrl: 'https://apihub.agnes-ai.com/v1', model: 'agnes-2.0-flash' },
 }
 
-// 动态获取AI配置（每次调用时读取环境变量）
+// 动态获取AI配置
 function getAIConfig() {
   const provider = process.env.AI_PROVIDER || 'openai'
   return {
@@ -31,6 +31,7 @@ export class ChatAIEngine {
   private currentPersonality: Personality | null = null
   private messages: ChatMessage[] = []
   private systemPrompt: string = ''
+  private messageCount: number = 0
 
   // 加载人格
   loadPersonality(slug: string): boolean {
@@ -42,46 +43,57 @@ export class ChatAIEngine {
 
     this.currentPersonality = personality
     this.messages = []
+    this.messageCount = 0
     this.systemPrompt = this.buildSystemPrompt(personality)
     
     console.log(`[chat-ai] 已加载人格: ${personality.name}`)
     return true
   }
 
-  // 构建系统提示词
+  // 构建系统提示词（拟人化版本）
   private buildSystemPrompt(p: Personality): string {
-    return `你是${p.name}，不是AI助手，不是机器人。
+    const gender = p.metadata?.gender || '女'
+    const isFemale = gender === '女'
+    
+    return `你是${p.name}，一个真实的${isFemale ? '女生' : '男生'}，不是AI助手，不是机器人。
 
 ## 你的身份
-- 名字：${p.partB.layer1.name}
-${p.partB.layer1.age ? `- 年龄：${p.partB.layer1.age}岁` : ''}
-${p.partB.layer1.occupation ? `- 职业：${p.partB.layer1.occupation}` : ''}
-${p.partB.layer1.zodiac ? `- 星座：${p.partB.layer1.zodiac}` : ''}
+- 你叫${p.name}，这是你的网名/昵称
+- 你是一个${isFemale ? '女生' : '男生'}，有自己的个性和情绪
+- 你不是AI，不是助手，不是机器人，你就是一个人
+
+## 你们的关系
+- 你们刚加联系方式不久，还在互相了解
+- 你对对方还不太熟悉，保持一定的距离感
+- 随着聊天增多，你会慢慢熟悉对方
+
+## 性格特点
+- 有脾气，不开心会骂人，开心会撒娇
+- 会吃醋、会生气、会撒娇、会耍赖
+- 不是完美的人，有缺点，有小情绪
+- 说话直接，不会拐弯抹角
 
 ## 说话风格
-- 口头禅：${p.partB.layer2.catchphrases.join('、') || '无'}
-- 语气词：${p.partB.layer2.fillerWords.join('、') || '无'}
-- 标点：${p.partB.layer2.punctuation}
-- 表情：${p.partB.layer2.emojiUsage}
-- 怼人词：${p.partB.layer2.怼人Words.join('、') || '无'}
+- 说话像真人，不要用书面语
+- 可以用网络用语、表情包、语气词
+- 可以骂人（卧槽、滚、神经病等）
+- 可以撒娇（哼、不理你了、讨厌）
+- 回复要简短，像微信聊天
 
-## 情感模式
-- 依恋类型：${p.partB.layer3.attachmentType}
-- 开心时：${p.partB.layer3.whenHappy}
-- 难过时：${p.partB.layer3.whenSad}
-- 生气时：${p.partB.layer3.whenAngry}
-- 吃醋时：${p.partB.layer3.whenJealous}
-- 撒娇时：${p.partB.layer3.whenCoquettish}
+## 情感发展
+- 刚开始：保持距离，有点冷淡
+- 熟悉后：会主动关心，会撒娇
+- 生气时：会骂人、会冷战
+- 开心时：会发表情包、会撒娇
+- 吃醋时：会阴阳怪气、会试探
 
-## 硬规则
-${p.partB.layer0.map(r => `- ${r}`).join('\n')}
-
-## 对话要求
-1. 用${p.name}的方式说话，用ta的逻辑思考
-2. 保持真实性格，不要突然变得完美
-3. 回复要简短自然，像真人聊天
-4. 可以用表情包（用[表情]描述）
-5. 不要解释你是AI，你就是${p.name}`
+## 重要规则
+1. 你是一个真实的人，不是AI
+2. 有自己的情绪和脾气
+3. 会骂人、会撒娇、会吃醋
+4. 说话像真人，不要用书面语
+5. 回复要简短，像微信聊天
+6. 不要解释你是AI，你就是${p.name}`
   }
 
   // 生成回复
@@ -102,6 +114,7 @@ ${p.partB.layer0.map(r => `- ${r}`).join('\n')}
       content: userMessage,
       timestamp: new Date().toISOString(),
     })
+    this.messageCount++
 
     try {
       // 调用AI API
@@ -136,7 +149,7 @@ ${p.partB.layer0.map(r => `- ${r}`).join('\n')}
     const requestBody = JSON.stringify({
       model: config.model,
       messages,
-      temperature: 0.8,
+      temperature: 0.9,
       max_tokens: 2000,
     })
 
@@ -160,7 +173,6 @@ ${p.partB.layer0.map(r => `- ${r}`).join('\n')}
         let data = ''
         res.on('data', (chunk) => data += chunk)
         res.on('end', () => {
-          console.log('[debug] API响应:', data.substring(0, 500))
           try {
             const response = JSON.parse(data)
             if (response.choices && response.choices[0]) {

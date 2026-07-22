@@ -1,6 +1,8 @@
 // 测试多轮对话
-import { creator } from './src/creator'
+import { Creator } from './src/creator'
 import { chatAIEngine } from './src/chat-ai'
+
+const creator = new Creator()
 
 async function test() {
   console.log('========================================')
@@ -9,7 +11,7 @@ async function test() {
 
   // 创建人格
   console.log('1. 创建人格...')
-  const p = await creator.create({ name: '小红', description: '测试人格' })
+  const p = await creator.create({ name: '小红', gender: '女', description: '测试人格' })
   console.log(`创建成功: ${p.name}\n`)
 
   // 加载人格

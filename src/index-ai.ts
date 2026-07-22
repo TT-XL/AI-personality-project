@@ -123,20 +123,30 @@ async function handleCreate() {
   console.log('           创建新人格')
   console.log('========================================\n')
 
-  const name = await question('人格名字 (输入0返回): ')
-  if (name === '0' || !name) {
-    console.log('已取消')
-    return
-  }
+  // 选择性别
+  console.log('选择性别:')
+  console.log('  1. 女生')
+  console.log('  2. 男生')
+  console.log('  0. 返回主菜单\n')
 
+  const genderChoice = await question('输入序号: ')
+  if (genderChoice === '0') return
+
+  const gender = genderChoice === '2' ? '男' : '女'
+  console.log(`\n已选择: ${gender}生`)
+
+  // 人格名字（可选，不填会自动生成）
+  const name = await question('人格网名 (可选，直接回车自动生成): ')
+  
   const description = await question('描述 (可选，直接回车跳过): ')
 
   await creator.create({
-    name,
+    name: name || undefined,
+    gender,
     description: description || undefined,
   })
 
-  console.log(`\n创建成功: ${name}`)
+  console.log(`\n创建成功!`)
   await question('\n按回车继续...')
 }
 

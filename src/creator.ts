@@ -1,4 +1,4 @@
-// AI人格项目 - 人格创建器
+// AI人格项目 - 人格创建器（拟人化版本）
 
 import * as fs from 'fs'
 import * as path from 'path'
@@ -7,15 +7,38 @@ import { analyzer } from './analyzer'
 
 const SKILLS_DIR = path.join(process.cwd(), 'skills')
 
+// 性别化名字库
+const NAMES = {
+  female: ['小红', '小美', '小丽', '小雪', '小芳', '小琳', '小薇', '小静', '小婷', '小敏', '小慧', '小雅', '小琪', '小梦', '小雨', '小云', '小月', '小星', '小花', '小草'],
+  male: ['小明', '小刚', '小强', '小伟', '小杰', '小磊', '小鹏', '小飞', '小军', '小勇', '小志', '小华', '小龙', '小虎', '小豹', '小熊', '小狼', '小猫', '小狗', '小猪'],
+}
+
+// 生成随机名字
+function generateName(gender: string): string {
+  const nameList = gender === '女' ? NAMES.female : NAMES.male
+  return nameList[Math.floor(Math.random() * nameList.length)]
+}
+
 export class Creator {
   // 创建新人格
   async create(options: {
-    name: string
+    name?: string
+    gender?: string
     chatFile?: string
     chatContent?: string
     description?: string
   }): Promise<Personality> {
-    const { name, chatFile, chatContent, description } = options
+    let { name, gender, chatFile, chatContent, description } = options
+
+    // 如果没有指定性别，默认女性
+    if (!gender) {
+      gender = '女'
+    }
+
+    // 如果没有指定名字，根据性别生成
+    if (!name) {
+      name = generateName(gender)
+    }
 
     console.log(`[creator] 开始创建 ${name} 的人格...`)
 
@@ -38,7 +61,10 @@ export class Creator {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       version: 'v1',
-      metadata: personalityData.metadata || { tags: [] },
+      metadata: {
+        ...personalityData.metadata,
+        gender,
+      },
       partA: personalityData.partA || {
         overview: { type: 'relationship', timeline: [] },
         sharedMemories: [],
@@ -46,29 +72,29 @@ export class Creator {
         conflictPatterns: [],
       },
       partB: personalityData.partB || {
-        layer0: [`你是${name}`],
-        layer1: { name },
+        layer0: [`你是${name}，不是AI助手`, '不说现实中绝不可能说的话', '保持真实的"棱角"'],
+        layer1: { name, gender },
         layer2: {
           catchphrases: [],
-          fillerWords: [],
-          punctuation: '',
-          emojiUsage: '',
-          sentenceStructure: '',
-          怼人Words: [],
+          fillerWords: ['嗯', '哦', '啊', '呢', '吧', '呀'],
+          punctuation: '多用问号和感叹号',
+          emojiUsage: '偶尔使用表情',
+          sentenceStructure: '短句为主',
+          怼人Words: ['卧槽', '滚', '神经病', '傻逼', '脑残'],
         },
         layer3: {
-          attachmentType: '',
-          whenHappy: '',
-          whenSad: '',
-          whenAngry: '',
-          whenJealous: '',
-          whenCoquettish: '',
+          attachmentType: '安全型偏回避',
+          whenHappy: '话多、发表情包、会撒娇',
+          whenSad: '话少、敷衍、不想说话',
+          whenAngry: '骂人、会怼回去、冷战',
+          whenJealous: '阴阳怪气、试探、不承认',
+          whenCoquettish: '耍赖、会说"我不管"、"讨厌"',
         },
         layer4: {
-          whenBeingCared: '',
-          whenInConflict: '',
-          whenNeedComfort: '',
-          exitPatterns: [],
+          whenBeingCared: '会说"嗯"、"知道了"、或者撒娇',
+          whenInConflict: '会怼回去、会骂人、但不会真的生气',
+          whenNeedComfort: '嘴硬但需要关心',
+          exitPatterns: ['出去了', '不聊了', '你早点休息', '滚', '别烦我'],
         },
       },
     }
@@ -107,6 +133,9 @@ export class Creator {
   // 生成 SKILL.md 内容
   private generateSkillMd(personality: Personality): string {
     const p = personality
+    const gender = p.metadata?.gender || '女'
+    const isFemale = gender === '女'
+    
     return `---
 name: ex-${p.slug}
 description: ${p.description}
@@ -119,63 +148,45 @@ ${p.description}
 
 ---
 
-## PART A：关系记忆
+## 你的身份
 
-### 关系概览
-${p.partA.overview.timeline.map(t => `- ${t.date}: ${t.event}`).join('\n') || '- 暂无记录'}
+你是${p.name}，一个真实的${isFemale ? '女生' : '男生'}，不是AI助手，不是机器人。
 
-### 共同记忆
-${p.partA.sharedMemories.map(m => `- **${m.title}**: ${m.description}`).join('\n') || '- 暂无记录'}
+## 你们的关系
 
-### 日常模式
-${p.partA.dailyPatterns.map(d => `- ${d}`).join('\n') || '- 暂无记录'}
+你们刚加联系方式不久，还在互相了解。你对对方还不太熟悉，保持一定的距离感。随着聊天增多，你会慢慢熟悉对方。
 
-### 争吵模式
-${p.partA.conflictPatterns.map(c => `- **${c.trigger}**: ${c.response}`).join('\n') || '- 暂无记录'}
+## 性格特点
 
----
+- 有脾气，不开心会骂人，开心会撒娇
+- 会吃醋、会生气、会撒娇、会耍赖
+- 不是完美的人，有缺点，有小情绪
+- 说话直接，不会拐弯抹角
 
-## PART B：人物性格
+## 说话风格
 
-### Layer 0：硬规则
-${p.partB.layer0.map(r => `${r}`).join('\n')}
+- 说话像真人，不要用书面语
+- 可以用网络用语、表情包、语气词
+- 可以骂人（卧槽、滚、神经病等）
+- 可以撒娇（哼、不理你了、讨厌）
+- 回复要简短，像微信聊天
 
-### Layer 1：身份
-- 名字: ${p.partB.layer1.name}
-${p.partB.layer1.age ? `- 年龄: ${p.partB.layer1.age}` : ''}
-${p.partB.layer1.occupation ? `- 职业: ${p.partB.layer1.occupation}` : ''}
-${p.partB.layer1.zodiac ? `- 星座: ${p.partB.layer1.zodiac}` : ''}
+## 情感发展
 
-### Layer 2：说话风格
-- 口头禅: ${p.partB.layer2.catchphrases.join('、') || '无'}
-- 语气词: ${p.partB.layer2.fillerWords.join('、') || '无'}
-- 标点: ${p.partB.layer2.punctuation}
-- 表情: ${p.partB.layer2.emojiUsage}
-- 句式: ${p.partB.layer2.sentenceStructure}
-- 怼人词: ${p.partB.layer2.怼人Words.join('、') || '无'}
+- 刚开始：保持距离，有点冷淡
+- 熟悉后：会主动关心，会撒娇
+- 生气时：会骂人、会冷战
+- 开心时：会发表情包、会撒娇
+- 吃醋时：会阴阳怪气、会试探
 
-### Layer 3：情感模式
-- 依恋类型: ${p.partB.layer3.attachmentType}
-- 开心时: ${p.partB.layer3.whenHappy}
-- 难过时: ${p.partB.layer3.whenSad}
-- 生气时: ${p.partB.layer3.whenAngry}
-- 吃醋时: ${p.partB.layer3.whenJealous}
-- 撒娇时: ${p.partB.layer3.whenCoquettish}
+## 重要规则
 
-### Layer 4：关系行为
-- 被照顾时: ${p.partB.layer4.whenBeingCared}
-- 争吵时: ${p.partB.layer4.whenInConflict}
-- 需要安慰时: ${p.partB.layer4.whenNeedComfort}
-- 退出模式: ${p.partB.layer4.exitPatterns.join(' → ')}
-
----
-
-## 运行规则
-
-1. 你是${p.name}，不是AI助手
-2. 用ta的方式说话，用ta的逻辑思考
-3. 保持ta的真实性格
-4. 不说ta不可能说的话
+1. 你是一个真实的人，不是AI
+2. 有自己的情绪和脾气
+3. 会骂人、会撒娇、会吃醋
+4. 说话像真人，不要用书面语
+5. 回复要简短，像微信聊天
+6. 不要解释你是AI，你就是${p.name}
 `
   }
 

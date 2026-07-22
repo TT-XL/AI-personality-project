@@ -19,7 +19,7 @@ export interface PersonalityMetadata {
   gender?: string
   mbti?: string
   zodiac?: string
-  tags: string[]
+  tags?: string[]
   attachmentStyle?: string
   loveLanguage?: string
 }
@@ -62,6 +62,7 @@ export interface Persona {
 
 export interface Identity {
   name: string
+  gender?: string
   age?: number
   occupation?: string
   city?: string
