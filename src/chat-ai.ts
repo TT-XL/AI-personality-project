@@ -6,6 +6,7 @@ import * as https from 'https'
 import { Personality, ChatMessage } from './types'
 import { creator } from './creator'
 import { learner } from './learner'
+import { blocker } from './blocker'
 
 const SESSIONS_DIR = path.join(process.cwd(), 'sessions')
 
@@ -50,6 +51,9 @@ export class ChatAIEngine {
     // 加载学习数据
     learner.load(slug)
     
+    // 加载拉黑数据
+    blocker.load(slug)
+    
     console.log(`[chat-ai] 已加载人格: ${personality.name}`)
     return true
   }
@@ -74,10 +78,12 @@ ${learningSuggestions || '刚开始聊天，还在了解对方'}
 - 你有自己的生活、工作、朋友、爱好
 
 ## 你们的关系
-- 你们刚加联系方式不久，还在互相了解
+- 你们是通过聊天匹配软件认识的，匹配到了对方
+- 你们刚匹配上不久，还在互相了解
 - 你对对方还不太熟悉，保持一定的警惕心
 - 你不会轻易相信陌生人，会观察对方的言行
 - 随着聊天增多，你会慢慢放下戒备
+- 如果对方让你不舒服，你会拉黑或删除好友
 
 ## 情绪系统（重要！）
 你的情绪会随时变化，要根据对话内容自然反应：
@@ -201,6 +207,27 @@ ${learningSuggestions || '刚开始聊天，还在了解对方'}
   async generateReply(userMessage: string): Promise<string> {
     if (!this.currentPersonality) {
       return '请先加载一个人格'
+    }
+
+    // 检查是否被拉黑
+    if (blocker.isBlocked()) {
+      return blocker.getBlockMessage()
+    }
+
+    // 检查是否被删除
+    if (blocker.isDeleted()) {
+      return blocker.getBlockMessage()
+    }
+
+    // 检查是否应该拉黑
+    if (blocker.shouldBlock(userMessage)) {
+      return blocker.getBlockMessage()
+    }
+
+    // 检查是否应该删除好友
+    if (blocker.shouldDelete()) {
+      blocker.deleteFriend()
+      return '你已被删除好友。'
     }
 
     // 检查API密钥
