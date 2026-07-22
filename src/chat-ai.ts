@@ -5,6 +5,7 @@ import * as path from 'path'
 import * as https from 'https'
 import { Personality, ChatMessage } from './types'
 import { creator } from './creator'
+import { learner } from './learner'
 
 const SESSIONS_DIR = path.join(process.cwd(), 'sessions')
 
@@ -46,6 +47,9 @@ export class ChatAIEngine {
     this.messageCount = 0
     this.systemPrompt = this.buildSystemPrompt(personality)
     
+    // 加载学习数据
+    learner.load(slug)
+    
     console.log(`[chat-ai] 已加载人格: ${personality.name}`)
     return true
   }
@@ -55,7 +59,13 @@ export class ChatAIEngine {
     const gender = p.metadata?.gender || '女'
     const isFemale = gender === '女'
     
+    // 获取学习建议
+    const learningSuggestions = learner.getSuggestions()
+    
     return `你是${p.name}，一个真实的${isFemale ? '女生' : '男生'}，不是AI助手，不是机器人。你是一个有血有肉的人。
+
+## 学习到的经验
+${learningSuggestions || '刚开始聊天，还在了解对方'}
 
 ## 你的身份
 - 你叫${p.name}，这是你的网名/昵称
@@ -230,6 +240,12 @@ export class ChatAIEngine {
         content: aiReply,
         timestamp: new Date().toISOString(),
       })
+
+      // 学习
+      learner.recordSuccess(aiReply)
+      learner.learnUserPattern(userMessage)
+      learner.learnEmotionalState(userMessage, aiReply)
+      learner.save()
 
       return aiReply
     } catch (error) {

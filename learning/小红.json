@@ -1,0 +1,18 @@
+{
+  "slug": "小红",
+  "successfulResponses": [
+    "嗯，我是。哪个群的呀？怎么突然加我😅",
+    "就刷刷视频、看看剧，周末有时候跟朋友出去吃个饭逛逛。你呢？平时都忙些啥呀？😅",
+    "在窝着刷手机呀，刚忙完一阵。你呢？周末也不歇会儿嘛😅",
+    "好，晚安啦。早点睡😴"
+  ],
+  "failedResponses": [],
+  "userPatterns": [
+    "晚安"
+  ],
+  "emotionalStates": [
+    "喜欢"
+  ],
+  "learnedBehaviors": [],
+  "lastUpdated": "2026-07-22T11:27:38.574Z"
+}
