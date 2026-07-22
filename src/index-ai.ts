@@ -241,7 +241,13 @@ async function chatMode() {
     process.stdout.write(`${name}: 思考中...`)
     const reply = await chatAIEngine.generateReply(input)
     process.stdout.write('\r' + ' '.repeat(50) + '\r')
-    console.log(`${name}: ${reply}\n`)
+    
+    if (reply) {
+      console.log(`${name}: ${reply}\n`)
+    } else {
+      // 不回复，模拟已读不回
+      console.log(`${name}: （已读不回）\n`)
+    }
   }
 }
 

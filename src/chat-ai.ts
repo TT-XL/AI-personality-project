@@ -178,6 +178,13 @@ export class ChatAIEngine {
     })
     this.messageCount++
 
+    // 判断是否回复（模拟真人行为）
+    const shouldReply = this.shouldReply(userMessage)
+    if (!shouldReply) {
+      // 不回复，模拟已读不回
+      return '' // 返回空字符串表示不回复
+    }
+
     try {
       // 调用AI API
       const aiReply = await this.callAIApi(userMessage)
@@ -194,6 +201,27 @@ export class ChatAIEngine {
       console.error('[chat-ai] API调用失败:', error)
       return this.getLocalReply(userMessage)
     }
+  }
+
+  // 判断是否回复（模拟真人行为）
+  private shouldReply(message: string): boolean {
+    const messageCount = this.messageCount
+    
+    // 刚认识时，回复概率较低
+    if (messageCount <= 3) {
+      // 前3条消息，回复概率60%
+      return Math.random() < 0.6
+    }
+    
+    // 熟悉后，回复概率提高
+    if (messageCount <= 10) {
+      // 4-10条消息，回复概率75%
+      return Math.random() < 0.75
+    }
+    
+    // 很熟悉后，回复概率更高
+    // 10条消息后，回复概率90%
+    return Math.random() < 0.9
   }
 
   // 调用AI API
