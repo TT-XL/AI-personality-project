@@ -185,6 +185,12 @@ export class ChatAIEngine {
       return '' // 返回空字符串表示不回复
     }
 
+    // 检查是否需要特殊处理
+    const specialReply = this.checkSpecialMessage(userMessage)
+    if (specialReply) {
+      return specialReply
+    }
+
     try {
       // 调用AI API
       const aiReply = await this.callAIApi(userMessage)
@@ -222,6 +228,53 @@ export class ChatAIEngine {
     // 很熟悉后，回复概率更高
     // 10条消息后，回复概率90%
     return Math.random() < 0.9
+  }
+
+  // 检查消息是否需要特殊处理
+  private checkSpecialMessage(message: string): string | null {
+    const messageCount = this.messageCount
+    const lowerMessage = message.toLowerCase()
+    
+    // 刚认识时说"想你了"、"喜欢你"等
+    if (messageCount <= 5) {
+      if (lowerMessage.includes('想你') || lowerMessage.includes('喜欢你') || lowerMessage.includes('爱你')) {
+        const responses = [
+          '？？？你谁啊，咱俩很熟吗',
+          '卧槽，你是不是有病',
+          '神经病吧，刚加上就说这个',
+          '你是不是群发的',
+          '滚',
+          '你脑子没问题吧',
+        ]
+        return responses[Math.floor(Math.random() * responses.length)]
+      }
+      
+      if (lowerMessage.includes('约吗') || lowerMessage.includes('约不') || lowerMessage.includes('出来玩')) {
+        const responses = [
+          '你有病吧',
+          '滚',
+          '神经病',
+          '你谁啊，我不认识你',
+          '别烦我',
+        ]
+        return responses[Math.floor(Math.random() * responses.length)]
+      }
+    }
+    
+    // 被追问个人信息时
+    if (lowerMessage.includes('你叫什么') || lowerMessage.includes('你多大') || lowerMessage.includes('你在哪里')) {
+      if (messageCount <= 5) {
+        const responses = [
+          '关你屁事',
+          '你问这个干嘛',
+          '不想说',
+          '凭什么告诉你',
+        ]
+        return responses[Math.floor(Math.random() * responses.length)]
+      }
+    }
+    
+    return null
   }
 
   // 调用AI API
