@@ -227,22 +227,27 @@ ${learningSuggestions || '刚开始聊天，还在了解对方'}
       // 处理拉黑逻辑
       blocker.processBlock(userMessage)
       
-      // 检查是否应该删除好友
-      if (blocker.shouldDelete()) {
-        // 先骂人再删除
-        const scold = blocker.getScoldMessage()
+      // 随机决定行为
+      const { action, message } = blocker.getRandomAction(userMessage)
+      
+      if (action === 'delete') {
+        // 直接删除
         if (blocker.shouldDeletePermanently()) {
           blocker.deletePermanently()
-          return `${scold}，已彻底删除你。`
+          return message
         } else {
           blocker.deleteTemporarily()
-          return `${scold}，已删除你。`
+          return message
         }
+      } else if (action === 'block') {
+        // 拉黑
+        return message
+      } else if (action === 'scold') {
+        // 骂人
+        return message
       }
       
-      // 骂人再拉黑
-      const scold = blocker.getScoldMessage()
-      return scold
+      return message
     }
 
     // 检查API密钥

@@ -318,8 +318,70 @@ export class Blocker {
       '脑子有坑',
       '有毛病',
       '你脑子没问题吧',
+      '啥玩意',
+      '有大病',
+      '滚啊',
+      '你谁啊，有病吧',
+      '有完没完',
+      '烦不烦',
+      '闭嘴',
+      '有病',
+      '脑子进水了',
+      '有毛病吧',
+      '神经',
+      '有病吧你',
+      '滚蛋',
+      '少烦我',
+      '有完没完了',
+      '你是不是有病',
+      '有大病吧',
+      '脑子有泡',
+      '有毛病啊',
+      '滚远点',
+      '有病啊',
     ]
     return scoldMessages[Math.floor(Math.random() * scoldMessages.length)]
+  }
+
+  // 随机决定行为
+  getRandomAction(message: string): { action: 'scold' | 'block' | 'delete' | 'ignore'; message: string } {
+    const random = Math.random()
+    
+    // 根据反感程度决定行为
+    if (this.data && this.data.disgustLevel >= 80) {
+      // 很生气，可能直接删除
+      if (random < 0.3) {
+        // 30% 直接删除
+        return { action: 'delete', message: this.getScoldMessage() }
+      } else if (random < 0.7) {
+        // 40% 骂完删除
+        return { action: 'scold', message: this.getScoldMessage() }
+      } else {
+        // 30% 只拉黑
+        return { action: 'block', message: this.getScoldMessage() }
+      }
+    } else if (this.data && this.data.disgustLevel >= 50) {
+      // 生气了，可能拉黑
+      if (random < 0.5) {
+        // 50% 骂完拉黑
+        return { action: 'scold', message: this.getScoldMessage() }
+      } else {
+        // 50% 只拉黑
+        return { action: 'block', message: this.getScoldMessage() }
+      }
+    } else if (this.data && this.data.disgustLevel >= 10) {
+      // 有点烦，可能骂人
+      if (random < 0.6) {
+        // 60% 骂人
+        return { action: 'scold', message: this.getScoldMessage() }
+      } else {
+        // 40% 忽略
+        return { action: 'ignore', message: '' }
+      }
+    }
+    
+    // 正常情况，忽略
+    return { action: 'ignore', message: '' }
   }
 
   // 检查是否应该删除好友
