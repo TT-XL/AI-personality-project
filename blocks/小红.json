@@ -1,10 +1,10 @@
 {
   "slug": "小红",
-  "isBlocked": false,
+  "isBlocked": true,
   "isDeleted": false,
-  "disgustLevel": 20,
-  "blockReason": "骚扰",
-  "blockTime": "",
+  "disgustLevel": 60,
+  "blockReason": "暂时拉黑",
+  "blockTime": "2026-07-22T11:51:04.421Z",
   "canUnblock": false,
   "unblockCondition": ""
 }

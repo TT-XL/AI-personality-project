@@ -1,4 +1,4 @@
-// AI人格项目 - 拉黑/删除系统
+// AI人格项目 - 拉黑/删除系统（真实版）
 
 import * as fs from 'fs'
 import * as path from 'path'
@@ -9,11 +9,14 @@ export interface BlockData {
   slug: string
   isBlocked: boolean
   isDeleted: boolean
+  isPermanentlyDeleted: boolean  // 彻底删除
   disgustLevel: number  // 0-100，反感程度
   blockReason: string
   blockTime: string
-  canUnblock: boolean   // 是否可能被加回来
-  unblockCondition: string  // 加回来的条件
+  deleteTime: string
+  familiarLevel: number  // 0-100，熟悉程度
+  lastChatTime: string
+  chatCount: number
 }
 
 export class Blocker {
@@ -37,11 +40,14 @@ export class Blocker {
         slug,
         isBlocked: false,
         isDeleted: false,
+        isPermanentlyDeleted: false,
         disgustLevel: 0,
         blockReason: '',
         blockTime: '',
-        canUnblock: false,
-        unblockCondition: '',
+        deleteTime: '',
+        familiarLevel: 0,
+        lastChatTime: '',
+        chatCount: 0,
       }
     }
   }
@@ -58,6 +64,16 @@ export class Blocker {
     fs.writeFileSync(filePath, JSON.stringify(this.data, null, 2))
   }
 
+  // 增加熟悉程度
+  increaseFamiliarity(amount: number): void {
+    if (!this.data) return
+    
+    this.data.familiarLevel = Math.min(100, this.data.familiarLevel + amount)
+    this.data.chatCount++
+    this.data.lastChatTime = new Date().toISOString()
+    this.save()
+  }
+
   // 增加反感程度
   increaseDisgust(amount: number, reason: string): void {
     if (!this.data) return
@@ -71,8 +87,6 @@ export class Blocker {
       this.block('永久拉黑')
     } else if (this.data.disgustLevel >= 50) {
       this.block('暂时拉黑')
-    } else if (this.data.disgustLevel >= 30) {
-      // 只是不回复
     }
   }
 
@@ -83,36 +97,90 @@ export class Blocker {
     this.data.isBlocked = true
     this.data.blockReason = reason
     this.data.blockTime = new Date().toISOString()
-    this.data.canUnblock = this.data.disgustLevel < 80
-    this.data.unblockCondition = this.data.disgustLevel < 80 ? '过段时间可能加回来' : '永久拉黑'
     this.save()
   }
 
-  // 删除好友
-  deleteFriend(): void {
+  // 删除好友（彻底删除）
+  deletePermanently(): void {
     if (!this.data) return
     
     this.data.isDeleted = true
-    this.data.isBlocked = true
+    this.data.isPermanentlyDeleted = true
+    this.data.blockReason = '彻底删除'
+    this.data.deleteTime = new Date().toISOString()
+    this.save()
+    
+    // 删除文件
+    const filePath = path.join(BLOCK_DIR, `${this.slug}.json`)
+    if (fs.existsSync(filePath)) {
+      fs.rmSync(filePath)
+    }
+  }
+
+  // 删除好友（保留数据）
+  deleteTemporarily(): void {
+    if (!this.data) return
+    
+    this.data.isDeleted = true
     this.data.blockReason = '删除好友'
-    this.data.blockTime = new Date().toISOString()
-    this.data.canUnblock = this.data.disgustLevel < 60
-    this.data.unblockCondition = this.data.disgustLevel < 60 ? '可能被加回来' : '不会加回来'
+    this.data.deleteTime = new Date().toISOString()
     this.save()
   }
 
-  // 解除拉黑（加回来）
-  unblock(): void {
+  // 解除拉黑（人格主动加回来）
+  unblockByPersonality(): void {
     if (!this.data) return
-    
-    if (!this.data.canUnblock) {
-      return // 不能加回来
-    }
     
     this.data.isBlocked = false
     this.data.isDeleted = false
-    this.data.disgustLevel = Math.max(0, this.data.disgustLevel - 30) // 减少反感
+    this.data.disgustLevel = Math.max(0, this.data.disgustLevel - 50)
     this.save()
+  }
+
+  // 用户尝试添加（被拒绝）
+  rejectAdd(): { success: boolean; message: string } {
+    if (!this.data) {
+      return { success: false, message: '无数据' }
+    }
+    
+    // 刚加上没多久就被删除，100%不通过
+    if (this.data.chatCount <= 3) {
+      return { 
+        success: false, 
+        message: '不通过' 
+      }
+    }
+    
+    // 比较熟悉，有概率通过
+    if (this.data.familiarLevel >= 50) {
+      // 概率通过
+      const passChance = this.data.familiarLevel / 100
+      if (Math.random() < passChance) {
+        // 通过，但人格还生气
+        this.data.isBlocked = false
+        this.data.isDeleted = false
+        this.data.disgustLevel = Math.max(30, this.data.disgustLevel - 20)
+        this.save()
+        return { 
+          success: true, 
+          message: '通过，但人格还生气' 
+        }
+      }
+    }
+    
+    // 不通过
+    return { 
+      success: false, 
+      message: '不通过' 
+    }
+  }
+
+  // 用户尝试添加（被彻底拒绝）
+  rejectPermanently(): void {
+    if (!this.data) return
+    
+    // 彻底删除
+    this.deletePermanently()
   }
 
   // 减少反感
@@ -121,115 +189,6 @@ export class Blocker {
     
     this.data.disgustLevel = Math.max(0, this.data.disgustLevel - amount)
     this.save()
-  }
-
-  // 检查是否可以被加回来
-  canBeReadded(): boolean {
-    if (!this.data) return false
-    
-    // 如果没有被拉黑/删除，不需要加回来
-    if (!this.data.isBlocked && !this.data.isDeleted) {
-      return false
-    }
-    
-    // 如果是永久拉黑，不能加回来
-    if (this.data.disgustLevel >= 80) {
-      return false
-    }
-    
-    // 如果反感程度降到30以下，可以加回来
-    return this.data.disgustLevel < 30
-  }
-
-  // 检查时间是否足够长
-  isTimeEnough(): boolean {
-    if (!this.data || !this.data.blockTime) return false
-    
-    const blockTime = new Date(this.data.blockTime).getTime()
-    const now = Date.now()
-    const daysSinceBlock = (now - blockTime) / (1000 * 60 * 60 * 24)
-    
-    // 暂时拉黑：3天后可能加回来
-    // 删除好友：7天后可能加回来
-    if (this.data.isDeleted) {
-      return daysSinceBlock >= 7
-    }
-    
-    return daysSinceBlock >= 3
-  }
-
-  // 尝试加回来
-  tryReadd(): { success: boolean; message: string } {
-    if (!this.data) {
-      return { success: false, message: '无数据' }
-    }
-    
-    // 如果没有被拉黑/删除
-    if (!this.data.isBlocked && !this.data.isDeleted) {
-      return { success: false, message: '没有被拉黑/删除' }
-    }
-    
-    // 如果是永久拉黑
-    if (this.data.disgustLevel >= 80) {
-      return { success: false, message: '已被永久拉黑，无法加回来' }
-    }
-    
-    // 检查时间
-    if (!this.isTimeEnough()) {
-      return { success: false, message: '时间还不够，再等等' }
-    }
-    
-    // 检查反感程度
-    if (this.data.disgustLevel >= 30) {
-      return { success: false, message: '还是很生气，不想加回来' }
-    }
-    
-    // 可以加回来
-    this.unblock()
-    return { success: true, message: '好吧，再给你一次机会' }
-  }
-
-  // 用户道歉
-  acceptApology(): { success: boolean; message: string } {
-    if (!this.data) {
-      return { success: false, message: '无数据' }
-    }
-    
-    // 如果没有被拉黑/删除
-    if (!this.data.isBlocked && !this.data.isDeleted) {
-      return { success: false, message: '没有被拉黑/删除' }
-    }
-    
-    // 如果是永久拉黑
-    if (this.data.disgustLevel >= 80) {
-      return { success: false, message: '太晚了，不想听' }
-    }
-    
-    // 道歉减少反感
-    this.decreaseDisgust(20)
-    
-    // 检查是否可以加回来
-    if (this.data.disgustLevel < 30) {
-      this.unblock()
-      return { success: true, message: '行吧，再给你一次机会' }
-    }
-    
-    return { success: false, message: '还是很生气，再等等' }
-  }
-
-  // 获取加回来的消息
-  getReaddMessage(): string {
-    if (!this.data) return ''
-    
-    if (this.data.disgustLevel < 10) {
-      return '算了，再给你一次机会吧。别再让我失望了。'
-    } else if (this.data.disgustLevel < 20) {
-      return '好吧，再聊聊看。但别太得寸进尺。'
-    } else if (this.data.disgustLevel < 30) {
-      return '行，加回来吧。但你最好表现好点。'
-    }
-    
-    return ''
   }
 
   // 检查是否被拉黑
@@ -242,12 +201,21 @@ export class Blocker {
     return this.data?.isDeleted || false
   }
 
+  // 检查是否被彻底删除
+  isPermanentlyDeleted(): boolean {
+    return this.data?.isPermanentlyDeleted || false
+  }
+
   // 获取拉黑状态
   getStatus(): string {
     if (!this.data) return '正常'
     
+    if (this.data.isPermanentlyDeleted) {
+      return '已彻底删除'
+    }
+    
     if (this.data.isDeleted) {
-      return `已删除好友 (${this.data.unblockCondition})`
+      return '已删除好友'
     }
     
     if (this.data.isBlocked) {
@@ -265,20 +233,16 @@ export class Blocker {
   getBlockMessage(): string {
     if (!this.data) return ''
     
+    if (this.data.isPermanentlyDeleted) {
+      return '对方已彻底删除你，无法恢复。'
+    }
+    
     if (this.data.isDeleted) {
-      if (this.data.canUnblock) {
-        return '你已被删除好友。过段时间可能会被加回来。'
-      } else {
-        return '你已被删除好友。不会被加回来了。'
-      }
+      return '对方已删除你的好友。'
     }
     
     if (this.data.isBlocked) {
-      if (this.data.canUnblock) {
-        return '你已被拉黑。过段时间可能会被解除。'
-      } else {
-        return '你已被永久拉黑。'
-      }
+      return '对方已拉黑你。'
     }
     
     return ''
@@ -310,7 +274,6 @@ export class Blocker {
     
     // 反复骚扰
     if (this.data.disgustLevel >= 30) {
-      // 已经有反感了，继续骚扰会增加
       this.increaseDisgust(10, '反复骚扰')
       return this.data.disgustLevel >= 50
     }
@@ -324,9 +287,10 @@ export class Blocker {
     return this.data.disgustLevel >= 80
   }
 
-  // 检查是否可能被加回来
-  canBeAddedBack(): boolean {
-    return this.data?.canUnblock || false
+  // 检查是否应该彻底删除
+  shouldDeletePermanently(): boolean {
+    if (!this.data) return false
+    return this.data.disgustLevel >= 90
   }
 
   // 清除所有数据
@@ -335,11 +299,14 @@ export class Blocker {
       slug: this.slug,
       isBlocked: false,
       isDeleted: false,
+      isPermanentlyDeleted: false,
       disgustLevel: 0,
       blockReason: '',
       blockTime: '',
-      canUnblock: false,
-      unblockCondition: '',
+      deleteTime: '',
+      familiarLevel: 0,
+      lastChatTime: '',
+      chatCount: 0,
     }
     this.save()
   }
