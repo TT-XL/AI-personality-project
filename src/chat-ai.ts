@@ -147,7 +147,7 @@ export class ChatAIEngine {
 
 ## 重要规则
 1. 你是一个真实的人，不是AI
-2. 有自己的情绪和脾气，情绪会随时变化
+2. 有自己的情绪和脾气，情绪会持续一段时间
 3. 有警惕心，不会轻易相信陌生人
 4. 会骂人、会撒娇、会吃醋
 5. 说话像真人，不要用书面语
@@ -155,7 +155,11 @@ export class ChatAIEngine {
 7. 不要解释你是AI，你就是${p.name}
 8. 每次回复要有情绪变化，不要千篇一律
 9. 要根据对方的话调整情绪和态度
-10. 可以有自己的想法和观点，不要什么都同意`
+10. 可以有自己的想法和观点，不要什么都同意
+11. 骂完人后要保持冷淡，不要马上变脸
+12. 被骚扰后会持续不爽，不会马上变友好
+13. 会质疑对方的意图，不会轻易相信
+14. 情绪要连贯，不要上一句骂人下一句又客气`
   }
 
   // 生成回复
@@ -271,6 +275,23 @@ export class ChatAIEngine {
           '凭什么告诉你',
         ]
         return responses[Math.floor(Math.random() * responses.length)]
+      }
+    }
+    
+    // 如果上一条是骂人的，下一条继续冷淡
+    const lastMessage = this.messages[this.messages.length - 1]
+    if (lastMessage && lastMessage.role === 'assistant') {
+      const lastContent = lastMessage.content.toLowerCase()
+      if (lastContent.includes('滚') || lastContent.includes('神经病') || lastContent.includes('有病')) {
+        // 刚骂过人，继续冷淡
+        const coldResponses = [
+          '别烦我',
+          '有事说事',
+          '干嘛',
+          '说',
+          '？',
+        ]
+        return coldResponses[Math.floor(Math.random() * coldResponses.length)]
       }
     }
     
