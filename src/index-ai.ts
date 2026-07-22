@@ -6,6 +6,7 @@ import * as path from 'path'
 import { creator } from './creator'
 import { chatAIEngine } from './chat-ai'
 import { blocker } from './blocker'
+import { configManager } from './config'
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -29,8 +30,19 @@ const PROVIDERS = [
 ]
 
 async function main() {
-  // 检查是否已配置
-  if (!process.env.AI_API_KEY) {
+  // 加载配置
+  configManager.load()
+  
+  // 如果已配置AI，设置环境变量
+  if (configManager.isAIConfigured()) {
+    const cfg = configManager.get()
+    process.env.AI_PROVIDER = cfg.aiProvider
+    process.env.AI_API_KEY = cfg.aiApiKey
+    process.env.AI_BASE_URL = cfg.aiBaseUrl
+    process.env.AI_MODEL = cfg.aiModel
+    console.log('[config] 已加载保存的配置')
+  } else {
+    // 首次运行，需要配置
     await setupAI()
   }
 
@@ -121,7 +133,11 @@ async function setupAI() {
   }
 
   process.env.AI_API_KEY = apiKey
-  console.log('\n配置完成!')
+  
+  // 保存配置
+  configManager.setAI(provider.value, apiKey, provider.baseUrl, provider.model)
+  
+  console.log('\n配置完成! 密钥已保存到本地')
 }
 
 // 创建人格
