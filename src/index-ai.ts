@@ -55,7 +55,7 @@ async function main() {
 // 显示主菜单
 async function showMainMenu() {
   console.log('\n========================================')
-  console.log('           AI人格模拟项目')
+  console.log('           AI陪伴养成')
   console.log('========================================\n')
   console.log('  1. 创建新人格')
   console.log('  2. 列出所有人格')

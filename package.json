@@ -1,7 +1,7 @@
 {
-  "name": "ai-personality-project",
+  "name": "ai-companion-nurturing",
   "version": "1.0.0",
-  "description": "AI人格模拟项目 - 把人蒸馏成AI Skill",
+  "description": "AI陪伴养成 - 把人蒸馏成AI Skill",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
