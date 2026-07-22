@@ -13,7 +13,7 @@ const PROVIDERS: Record<string, { baseUrl: string; model: string }> = {
   openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-3.5-turbo' },
   deepseek: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
   zhipu: { baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4' },
-  agnes: { baseUrl: 'https://apihub.agnes-ai.com/v1', model: 'Claw-3.5-Flash' },
+  agnes: { baseUrl: 'https://apihub.agnes-ai.com/v1', model: 'agnes-2.0-flash' },
 }
 
 // AI API配置
