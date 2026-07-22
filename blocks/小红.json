@@ -2,9 +2,12 @@
   "slug": "小红",
   "isBlocked": true,
   "isDeleted": false,
+  "isPermanentlyDeleted": false,
   "disgustLevel": 60,
   "blockReason": "暂时拉黑",
-  "blockTime": "2026-07-22T11:51:04.421Z",
-  "canUnblock": false,
-  "unblockCondition": ""
+  "blockTime": "2026-07-22T12:02:39.929Z",
+  "deleteTime": "",
+  "familiarLevel": 0,
+  "lastChatTime": "",
+  "chatCount": 0
 }

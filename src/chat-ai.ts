@@ -219,20 +219,26 @@ ${learningSuggestions || '刚开始聊天，还在了解对方'}
       return blocker.getBlockMessage()
     }
 
-    // 检查是否应该拉黑
-    if (blocker.shouldBlock(userMessage)) {
-      return blocker.getBlockMessage()
-    }
-
-    // 检查是否应该删除好友
-    if (blocker.shouldDelete()) {
-      if (blocker.shouldDeletePermanently()) {
-        blocker.deletePermanently()
-        return '对方已彻底删除你，无法恢复。'
-      } else {
-        blocker.deleteTemporarily()
-        return '对方已删除你的好友。'
+    // 检查是否应该拉黑（先检查，再处理）
+    const shouldBlock = blocker.shouldBlock(userMessage)
+    console.log(`[debug] shouldBlock(${userMessage}): ${shouldBlock}, disgustLevel: ${blocker.getDisgustLevel()}`)
+    
+    if (shouldBlock) {
+      // 处理拉黑逻辑
+      blocker.processBlock(userMessage)
+      
+      // 检查是否应该删除好友
+      if (blocker.shouldDelete()) {
+        if (blocker.shouldDeletePermanently()) {
+          blocker.deletePermanently()
+          return '对方已彻底删除你，无法恢复。'
+        } else {
+          blocker.deleteTemporarily()
+          return '对方已删除你的好友。'
+        }
       }
+      
+      return blocker.getBlockMessage()
     }
 
     // 检查API密钥

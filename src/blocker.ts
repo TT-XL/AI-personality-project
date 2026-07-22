@@ -229,6 +229,11 @@ export class Blocker {
     return '正常'
   }
 
+  // 获取反感程度
+  getDisgustLevel(): number {
+    return this.data?.disgustLevel || 0
+  }
+
   // 获取拉黑消息
   getBlockMessage(): string {
     if (!this.data) return ''
@@ -248,7 +253,7 @@ export class Blocker {
     return ''
   }
 
-  // 检查是否应该拉黑
+  // 检查是否应该拉黑（只检查，不修改状态）
   shouldBlock(message: string): boolean {
     if (!this.data) return false
     
@@ -256,29 +261,50 @@ export class Blocker {
     
     // 骚扰行为
     if (lowerMessage.includes('约吗') || lowerMessage.includes('约不') || lowerMessage.includes('出来玩')) {
+      return true
+    }
+    
+    // 色情内容
+    if (lowerMessage.includes('色') || lowerMessage.includes('骚') || lowerMessage.includes('约炮')) {
+      return true
+    }
+    
+    // 威胁
+    if (lowerMessage.includes('杀') || lowerMessage.includes('死') || lowerMessage.includes('打')) {
+      return true
+    }
+    
+    return false
+  }
+
+  // 处理拉黑逻辑（增加反感程度）
+  processBlock(message: string): void {
+    if (!this.data) return
+    
+    const lowerMessage = message.toLowerCase()
+    
+    // 骚扰行为
+    if (lowerMessage.includes('约吗') || lowerMessage.includes('约不') || lowerMessage.includes('出来玩')) {
       this.increaseDisgust(20, '骚扰')
-      return this.data.disgustLevel >= 50
+      return
     }
     
     // 色情内容
     if (lowerMessage.includes('色') || lowerMessage.includes('骚') || lowerMessage.includes('约炮')) {
       this.increaseDisgust(30, '色情骚扰')
-      return this.data.disgustLevel >= 50
+      return
     }
     
     // 威胁
     if (lowerMessage.includes('杀') || lowerMessage.includes('死') || lowerMessage.includes('打')) {
       this.increaseDisgust(50, '威胁')
-      return this.data.disgustLevel >= 50
+      return
     }
     
-    // 反复骚扰
+    // 反复骚扰（只有在已经有反感的情况下才增加）
     if (this.data.disgustLevel >= 30) {
       this.increaseDisgust(10, '反复骚扰')
-      return this.data.disgustLevel >= 50
     }
-    
-    return false
   }
 
   // 检查是否应该删除好友

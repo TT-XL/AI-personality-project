@@ -1,0 +1,14 @@
+{
+  "slug": "晴天",
+  "successfulResponses": [
+    "嗨~ 刚匹配上，你是？👀",
+    "乔治？英文名还是随便起的网名啊😂 行吧，那就这么叫了。你平时都干啥呀？"
+  ],
+  "failedResponses": [],
+  "userPatterns": [
+    "你好~~"
+  ],
+  "emotionalStates": [],
+  "learnedBehaviors": [],
+  "lastUpdated": "2026-07-22T11:55:36.198Z"
+}
