@@ -1,4 +1,4 @@
-// AI人格项目 - 主入口（AI版本）
+// AI人格项目 - 主入口（AI版 - 交互式配置）
 
 import * as readline from 'readline'
 import { creator } from './creator'
@@ -17,21 +17,24 @@ const question = (q: string): Promise<string> => {
   })
 }
 
+// AI服务商列表
+const PROVIDERS = [
+  { name: 'Agnes AI', value: 'agnes', baseUrl: 'https://apihub.agnes-ai.com/v1', model: 'agnes-2.0-flash' },
+  { name: 'OpenAI', value: 'openai', baseUrl: 'https://api.openai.com/v1', model: 'gpt-3.5-turbo' },
+  { name: 'DeepSeek', value: 'deepseek', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+  { name: '智谱 (GLM)', value: 'zhipu', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4' },
+]
+
 async function main() {
   console.log('========================================')
   console.log('    AI人格模拟项目 v1.0 (AI版)')
   console.log('    把人蒸馏成 AI Skill')
   console.log('========================================')
   console.log()
-  
-  // 检查AI配置
+
+  // 检查是否已配置
   if (!process.env.AI_API_KEY) {
-    console.log('  提示: 未配置AI API，将使用本地回复')
-    console.log('  配置方法:')
-    console.log('    set AI_API_KEY=你的API密钥')
-    console.log('    set AI_PROVIDER=openai/deepseek/zhipu')
-    console.log('    set AI_MODEL=gpt-3.5-turbo')
-    console.log()
+    await setupAI()
   }
 
   while (true) {
@@ -62,7 +65,7 @@ async function main() {
         break
 
       case 'config':
-        showConfig()
+        await setupAI()
         break
 
       case 'quit':
@@ -79,6 +82,39 @@ async function main() {
   }
 }
 
+// 交互式AI配置
+async function setupAI() {
+  console.log('\n【AI配置】')
+  console.log('请选择AI服务商:\n')
+  
+  PROVIDERS.forEach((p, i) => {
+    console.log(`  ${i + 1}. ${p.name}`)
+  })
+  console.log()
+
+  const choice = await question('输入序号 (1-4): ')
+  const index = parseInt(choice) - 1
+
+  if (index < 0 || index >= PROVIDERS.length) {
+    console.log('无效选择，使用默认: Agnes AI')
+    process.env.AI_PROVIDER = 'agnes'
+  } else {
+    const provider = PROVIDERS[index]
+    process.env.AI_PROVIDER = provider.value
+    process.env.AI_BASE_URL = provider.baseUrl
+    process.env.AI_MODEL = provider.model
+    console.log(`已选择: ${provider.name}`)
+  }
+
+  const apiKey = await question('\n请输入API密钥: ')
+  if (apiKey) {
+    process.env.AI_API_KEY = apiKey
+    console.log('配置完成!\n')
+  } else {
+    console.log('未输入密钥，将使用本地回复\n')
+  }
+}
+
 function showHelp() {
   console.log(`
 命令列表:
@@ -86,23 +122,9 @@ function showHelp() {
   list                     - 列出所有人格
   chat <slug>              - 与人格聊天
   delete <slug>            - 删除人格
-  config                   - 查看AI配置
+  config                   - 重新配置AI
   help                     - 显示帮助
   quit                     - 退出程序
-`)
-}
-
-function showConfig() {
-  console.log(`
-AI配置:
-  提供商: ${process.env.AI_PROVIDER || '未配置'}
-  模型: ${process.env.AI_MODEL || 'gpt-3.5-turbo'}
-  API密钥: ${process.env.AI_API_KEY ? '已配置' : '未配置'}
-  
-配置方法 (Windows PowerShell):
-  $env:AI_API_KEY="你的密钥"
-  $env:AI_PROVIDER="openai"
-  $env:AI_MODEL="gpt-3.5-turbo"
 `)
 }
 
