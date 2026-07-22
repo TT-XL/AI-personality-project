@@ -6,10 +6,10 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "create": "node dist/index.js create",
-    "list": "node dist/index.js list",
-    "chat": "node dist/index.js chat",
-    "dev": "ts-node src/index.ts"
+    "dev": "ts-node src/index.ts",
+    "create": "ts-node src/index.ts",
+    "list": "ts-node src/index.ts",
+    "chat": "ts-node src/index.ts"
   },
   "keywords": ["ai", "personality", "skill", "chat"],
   "author": "TT-XL",
