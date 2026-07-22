@@ -3,3 +3,8 @@ dist/
 .env
 *.log
 .DS_Store
+config/
+learning/
+blocks/
+skills/
+test*.ts
