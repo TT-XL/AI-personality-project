@@ -8,19 +8,27 @@ import { creator } from './creator'
 
 const SESSIONS_DIR = path.join(process.cwd(), 'sessions')
 
+// AI服务商配置
+const PROVIDERS: Record<string, { baseUrl: string; model: string }> = {
+  openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-3.5-turbo' },
+  deepseek: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+  zhipu: { baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4' },
+  agnes: { baseUrl: 'https://apihub.agnes-ai.com/v1', model: 'Claw-3.5-Flash' },
+}
+
 // AI API配置
 const AI_CONFIG = {
-  // 支持的AI服务商
-  provider: process.env.AI_PROVIDER || 'openai', // openai / deepseek / zhipu
+  // 支持的AI服务商: openai / deepseek / zhipu / agnes
+  provider: process.env.AI_PROVIDER || 'openai',
   
   // API密钥
   apiKey: process.env.AI_API_KEY || '',
   
-  // API地址
-  baseUrl: process.env.AI_BASE_URL || 'https://api.openai.com/v1',
+  // API地址（优先使用环境变量，否则根据provider自动选择）
+  baseUrl: process.env.AI_BASE_URL || PROVIDERS[process.env.AI_PROVIDER || 'openai']?.baseUrl || 'https://api.openai.com/v1',
   
-  // 模型
-  model: process.env.AI_MODEL || 'gpt-3.5-turbo',
+  // 模型（优先使用环境变量，否则根据provider自动选择）
+  model: process.env.AI_MODEL || PROVIDERS[process.env.AI_PROVIDER || 'openai']?.model || 'gpt-3.5-turbo',
 }
 
 export class ChatAIEngine {
