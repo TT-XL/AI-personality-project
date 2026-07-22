@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo     AI Personality Project - Start
+echo     AI Personality Project
 echo ========================================
 echo.
 

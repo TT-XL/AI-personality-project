@@ -1,4 +1,4 @@
-// AI人格项目 - 主入口（AI版 - 交互式配置）
+// AI人格项目 - 主入口（交互式菜单版）
 
 import * as readline from 'readline'
 import { creator } from './creator'
@@ -26,169 +26,199 @@ const PROVIDERS = [
 ]
 
 async function main() {
-  console.log('========================================')
-  console.log('    AI人格模拟项目 v1.0 (AI版)')
-  console.log('    把人蒸馏成 AI Skill')
-  console.log('========================================')
-  console.log()
-
   // 检查是否已配置
   if (!process.env.AI_API_KEY) {
     await setupAI()
   }
 
+  // 主菜单循环
   while (true) {
-    const input = await question('> ')
-    const parts = input.split(' ')
-    const cmd = parts[0].toLowerCase()
-    const args = parts.slice(1).join(' ')
-
-    switch (cmd) {
-      case 'help':
-        showHelp()
-        break
-
-      case 'create':
-        await handleCreate(args)
-        break
-
-      case 'list':
-        handleList()
-        break
-
-      case 'chat':
-        await handleChat(args)
-        break
-
-      case 'delete':
-        handleDelete(args)
-        break
-
-      case 'config':
-        await setupAI()
-        break
-
-      case 'quit':
-      case 'exit':
-        console.log('再见!')
-        rl.close()
-        process.exit(0)
-
-      default:
-        if (cmd) {
-          console.log(`未知命令: ${cmd}，输入 help 查看帮助`)
-        }
-    }
+    await showMainMenu()
   }
 }
 
-// 交互式AI配置
+// 显示主菜单
+async function showMainMenu() {
+  console.log('\n========================================')
+  console.log('           AI人格模拟项目')
+  console.log('========================================\n')
+  console.log('  1. 创建新人格')
+  console.log('  2. 列出所有人格')
+  console.log('  3. 与人格聊天')
+  console.log('  4. 删除人格')
+  console.log('  5. 重新配置AI')
+  console.log('  0. 退出程序')
+  console.log('\n========================================\n')
+
+  const choice = await question('请选择 (0-5): ')
+
+  switch (choice) {
+    case '1':
+      await handleCreate()
+      break
+    case '2':
+      handleList()
+      break
+    case '3':
+      await handleChat()
+      break
+    case '4':
+      await handleDelete()
+      break
+    case '5':
+      await setupAI()
+      break
+    case '0':
+      console.log('\n再见!')
+      rl.close()
+      process.exit(0)
+    default:
+      console.log('\n无效选择，请重新输入')
+  }
+}
+
+// AI配置
 async function setupAI() {
-  console.log('\n【AI配置】')
+  console.log('\n========================================')
+  console.log('           AI配置')
+  console.log('========================================\n')
   console.log('请选择AI服务商:\n')
   
   PROVIDERS.forEach((p, i) => {
     console.log(`  ${i + 1}. ${p.name}`)
   })
-  console.log()
+  console.log(`  0. 返回主菜单`)
+  console.log('\n========================================\n')
 
-  const choice = await question('输入序号 (1-4): ')
+  const choice = await question('输入序号: ')
+  
+  if (choice === '0') return
+
   const index = parseInt(choice) - 1
 
   if (index < 0 || index >= PROVIDERS.length) {
-    console.log('无效选择，使用默认: Agnes AI')
-    process.env.AI_PROVIDER = 'agnes'
-  } else {
-    const provider = PROVIDERS[index]
-    process.env.AI_PROVIDER = provider.value
-    process.env.AI_BASE_URL = provider.baseUrl
-    process.env.AI_MODEL = provider.model
-    console.log(`已选择: ${provider.name}`)
-  }
-
-  const apiKey = await question('\n请输入API密钥: ')
-  if (apiKey) {
-    process.env.AI_API_KEY = apiKey
-    console.log('配置完成!\n')
-  } else {
-    console.log('未输入密钥，将使用本地回复\n')
-  }
-}
-
-function showHelp() {
-  console.log(`
-命令列表:
-  create <名字> [文件路径]  - 创建新人格
-  list                     - 列出所有人格
-  chat <slug>              - 与人格聊天
-  delete <slug>            - 删除人格
-  config                   - 重新配置AI
-  help                     - 显示帮助
-  quit                     - 退出程序
-`)
-}
-
-async function handleCreate(args: string) {
-  const parts = args.split(' ')
-  const name = parts[0]
-  const filePath = parts[1]
-
-  if (!name) {
-    console.log('请提供名字，例如: create 小明')
+    console.log('\n无效选择')
     return
   }
 
-  const description = await question('描述 (可选): ')
+  const provider = PROVIDERS[index]
+  process.env.AI_PROVIDER = provider.value
+  process.env.AI_BASE_URL = provider.baseUrl
+  process.env.AI_MODEL = provider.model
+  console.log(`\n已选择: ${provider.name}`)
+
+  const apiKey = await question('请输入API密钥 (输入0返回): ')
+  if (apiKey === '0' || !apiKey) {
+    console.log('已取消')
+    return
+  }
+
+  process.env.AI_API_KEY = apiKey
+  console.log('\n配置完成!')
+}
+
+// 创建人格
+async function handleCreate() {
+  console.log('\n========================================')
+  console.log('           创建新人格')
+  console.log('========================================\n')
+
+  const name = await question('人格名字 (输入0返回): ')
+  if (name === '0' || !name) {
+    console.log('已取消')
+    return
+  }
+
+  const description = await question('描述 (可选，直接回车跳过): ')
 
   await creator.create({
     name,
-    chatFile: filePath,
     description: description || undefined,
   })
 
-  console.log('创建成功!')
+  console.log(`\n创建成功: ${name}`)
+  await question('\n按回车继续...')
 }
 
+// 列出所有人格
 function handleList() {
   const slugs = creator.list()
+  
+  console.log('\n========================================')
+  console.log('           所有人格')
+  console.log('========================================\n')
+  
   if (slugs.length === 0) {
-    console.log('还没有创建任何人格')
+    console.log('  还没有创建任何人格')
+  } else {
+    slugs.forEach((slug, i) => {
+      const p = creator.get(slug)
+      console.log(`  ${i + 1}. ${slug} - ${p?.description || '无描述'}`)
+    })
+  }
+  
+  console.log('\n========================================\n')
+}
+
+// 与人格聊天
+async function handleChat() {
+  const slugs = creator.list()
+  
+  if (slugs.length === 0) {
+    console.log('\n还没有创建任何人格，请先创建')
     return
   }
 
-  console.log('\n所有人格:')
+  console.log('\n========================================')
+  console.log('           选择人格')
+  console.log('========================================\n')
+  
   slugs.forEach((slug, i) => {
     const p = creator.get(slug)
     console.log(`  ${i + 1}. ${slug} - ${p?.description || '无描述'}`)
   })
-  console.log()
-}
+  console.log(`  0. 返回主菜单`)
+  console.log('\n========================================\n')
 
-async function handleChat(slug: string) {
-  if (!slug) {
-    console.log('请提供人格slug，例如: chat xiaoming')
+  const choice = await question('选择人格编号: ')
+  
+  if (choice === '0') return
+
+  const index = parseInt(choice) - 1
+
+  if (index < 0 || index >= slugs.length) {
+    console.log('\n无效选择')
     return
   }
 
+  const slug = slugs[index]
   if (!chatAIEngine.loadPersonality(slug)) {
     return
   }
 
-  console.log(`\n开始与 ${chatAIEngine.getPersonality()?.name} 聊天`)
-  console.log('输入 /help 查看命令，/quit 退出聊天\n')
+  // 进入聊天模式
+  await chatMode()
+}
+
+// 聊天模式
+async function chatMode() {
+  const name = chatAIEngine.getPersonality()?.name || '未知'
+  
+  console.log('\n========================================')
+  console.log(`           与 ${name} 聊天`)
+  console.log('========================================\n')
+  console.log('  输入消息开始聊天')
+  console.log('  输入 / 返回主菜单')
+  console.log('  输入 /clear 清除历史')
+  console.log('\n========================================\n')
 
   while (true) {
     const input = await question('你: ')
     
-    if (input === '/quit') {
+    if (input === '/') {
       chatAIEngine.saveSession()
-      console.log('聊天结束\n')
+      console.log('\n聊天结束，会话已保存')
       break
-    }
-
-    if (input === '/help') {
-      console.log('命令: /quit 退出, /clear 清除历史')
-      continue
     }
 
     if (input === '/clear') {
@@ -196,21 +226,55 @@ async function handleChat(slug: string) {
       continue
     }
 
+    if (!input) continue
+
     const reply = await chatAIEngine.generateReply(input)
-    console.log(`${chatAIEngine.getPersonality()?.name}: ${reply}\n`)
+    console.log(`${name}: ${reply}\n`)
   }
 }
 
-function handleDelete(slug: string) {
-  if (!slug) {
-    console.log('请提供人格slug，例如: delete xiaoming')
+// 删除人格
+async function handleDelete() {
+  const slugs = creator.list()
+  
+  if (slugs.length === 0) {
+    console.log('\n还没有创建任何人格')
     return
   }
 
-  if (creator.delete(slug)) {
-    console.log(`已删除: ${slug}`)
+  console.log('\n========================================')
+  console.log('           删除人格')
+  console.log('========================================\n')
+  
+  slugs.forEach((slug, i) => {
+    const p = creator.get(slug)
+    console.log(`  ${i + 1}. ${slug} - ${p?.description || '无描述'}`)
+  })
+  console.log(`  0. 返回主菜单`)
+  console.log('\n========================================\n')
+
+  const choice = await question('选择要删除的人格编号: ')
+  
+  if (choice === '0') return
+
+  const index = parseInt(choice) - 1
+
+  if (index < 0 || index >= slugs.length) {
+    console.log('\n无效选择')
+    return
+  }
+
+  const slug = slugs[index]
+  const confirm = await question(`确定删除 "${slug}" 吗？(y/n): `)
+  
+  if (confirm.toLowerCase() === 'y') {
+    if (creator.delete(slug)) {
+      console.log(`\n已删除: ${slug}`)
+    } else {
+      console.log(`\n删除失败: ${slug}`)
+    }
   } else {
-    console.log(`找不到: ${slug}`)
+    console.log('\n已取消')
   }
 }
 
