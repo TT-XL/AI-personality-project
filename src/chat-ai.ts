@@ -211,11 +211,41 @@ ${learningSuggestions || '刚开始聊天，还在了解对方'}
 
     // 检查是否被拉黑
     if (blocker.isBlocked()) {
+      // 检查是否可以加回来
+      if (blocker.canBeReadded() && blocker.isTimeEnough()) {
+        // 用户道歉
+        const lowerMessage = userMessage.toLowerCase()
+        if (lowerMessage.includes('对不起') || lowerMessage.includes('抱歉') || lowerMessage.includes('sorry')) {
+          const result = blocker.acceptApology()
+          if (result.success) {
+            return result.message
+          }
+        }
+        
+        // 时间足够长，可以加回来
+        const result = blocker.tryReadd()
+        if (result.success) {
+          return blocker.getReaddMessage()
+        }
+      }
+      
       return blocker.getBlockMessage()
     }
 
     // 检查是否被删除
     if (blocker.isDeleted()) {
+      // 检查是否可以加回来
+      if (blocker.canBeReadded() && blocker.isTimeEnough()) {
+        // 用户道歉
+        const lowerMessage = userMessage.toLowerCase()
+        if (lowerMessage.includes('对不起') || lowerMessage.includes('抱歉') || lowerMessage.includes('sorry')) {
+          const result = blocker.acceptApology()
+          if (result.success) {
+            return result.message
+          }
+        }
+      }
+      
       return blocker.getBlockMessage()
     }
 
