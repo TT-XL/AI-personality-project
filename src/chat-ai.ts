@@ -16,19 +16,15 @@ const PROVIDERS: Record<string, { baseUrl: string; model: string }> = {
   agnes: { baseUrl: 'https://apihub.agnes-ai.com/v1', model: 'agnes-2.0-flash' },
 }
 
-// AI API配置
-const AI_CONFIG = {
-  // 支持的AI服务商: openai / deepseek / zhipu / agnes
-  provider: process.env.AI_PROVIDER || 'openai',
-  
-  // API密钥
-  apiKey: process.env.AI_API_KEY || '',
-  
-  // API地址（优先使用环境变量，否则根据provider自动选择）
-  baseUrl: process.env.AI_BASE_URL || PROVIDERS[process.env.AI_PROVIDER || 'openai']?.baseUrl || 'https://api.openai.com/v1',
-  
-  // 模型（优先使用环境变量，否则根据provider自动选择）
-  model: process.env.AI_MODEL || PROVIDERS[process.env.AI_PROVIDER || 'openai']?.model || 'gpt-3.5-turbo',
+// 动态获取AI配置（每次调用时读取环境变量）
+function getAIConfig() {
+  const provider = process.env.AI_PROVIDER || 'openai'
+  return {
+    provider,
+    apiKey: process.env.AI_API_KEY || '',
+    baseUrl: process.env.AI_BASE_URL || PROVIDERS[provider]?.baseUrl || 'https://api.openai.com/v1',
+    model: process.env.AI_MODEL || PROVIDERS[provider]?.model || 'gpt-3.5-turbo',
+  }
 }
 
 export class ChatAIEngine {
@@ -95,7 +91,8 @@ ${p.partB.layer0.map(r => `- ${r}`).join('\n')}
     }
 
     // 检查API密钥
-    if (!AI_CONFIG.apiKey) {
+    const config = getAIConfig()
+    if (!config.apiKey) {
       return this.getLocalReply(userMessage)
     }
 
@@ -126,6 +123,8 @@ ${p.partB.layer0.map(r => `- ${r}`).join('\n')}
 
   // 调用AI API
   private async callAIApi(userMessage: string): Promise<string> {
+    const config = getAIConfig()
+    
     const messages = [
       { role: 'system', content: this.systemPrompt },
       ...this.messages.map(m => ({
@@ -135,14 +134,15 @@ ${p.partB.layer0.map(r => `- ${r}`).join('\n')}
     ]
 
     const requestBody = JSON.stringify({
-      model: AI_CONFIG.model,
+      model: config.model,
       messages,
       temperature: 0.8,
-      max_tokens: 200,
+      max_tokens: 1000,
     })
 
     return new Promise((resolve, reject) => {
-      const url = new URL(`${AI_CONFIG.baseUrl}/chat/completions`)
+      const config = getAIConfig()
+      const url = new URL(`${config.baseUrl}/chat/completions`)
       
       const options = {
         hostname: url.hostname,
@@ -151,7 +151,7 @@ ${p.partB.layer0.map(r => `- ${r}`).join('\n')}
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AI_CONFIG.apiKey}`,
+          'Authorization': `Bearer ${config.apiKey}`,
           'Content-Length': Buffer.byteLength(requestBody),
         },
       }
@@ -160,12 +160,18 @@ ${p.partB.layer0.map(r => `- ${r}`).join('\n')}
         let data = ''
         res.on('data', (chunk) => data += chunk)
         res.on('end', () => {
+          console.log('[debug] API响应:', data.substring(0, 500))
           try {
             const response = JSON.parse(data)
             if (response.choices && response.choices[0]) {
-              resolve(response.choices[0].message.content)
+              const choice = response.choices[0]
+              // 优先使用content，如果没有则尝试reasoning_content
+              const content = choice.message.content || choice.message.reasoning_content || ''
+              resolve(content)
+            } else if (response.error) {
+              reject(new Error(response.error.message || 'API错误'))
             } else {
-              reject(new Error('Invalid API response'))
+              reject(new Error('Invalid API response: ' + data.substring(0, 200)))
             }
           } catch (e) {
             reject(e)
