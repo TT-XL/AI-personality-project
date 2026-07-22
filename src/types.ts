@@ -17,6 +17,7 @@ export interface PersonalityMetadata {
   apartSince?: string
   occupation?: string
   gender?: string
+  realName?: string
   mbti?: string
   zodiac?: string
   tags?: string[]

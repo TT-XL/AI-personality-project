@@ -7,15 +7,27 @@ import { analyzer } from './analyzer'
 
 const SKILLS_DIR = path.join(process.cwd(), 'skills')
 
-// 性别化名字库
-const NAMES = {
+// 性别化名字库（网名）
+const NICKNAMES = {
   female: ['小红', '小美', '小丽', '小雪', '小芳', '小琳', '小薇', '小静', '小婷', '小敏', '小慧', '小雅', '小琪', '小梦', '小雨', '小云', '小月', '小星', '小花', '小草'],
   male: ['小明', '小刚', '小强', '小伟', '小杰', '小磊', '小鹏', '小飞', '小军', '小勇', '小志', '小华', '小龙', '小虎', '小豹', '小熊', '小狼', '小猫', '小狗', '小猪'],
 }
 
-// 生成随机名字
-function generateName(gender: string): string {
-  const nameList = gender === '女' ? NAMES.female : NAMES.male
+// 真实姓名库
+const REAL_NAMES = {
+  female: ['王芳', '李娜', '张伟', '刘洋', '陈静', '杨丽', '赵敏', '黄燕', '周雪', '吴琳', '徐婷', '孙慧', '马雅', '朱琪', '胡梦', '郭雨', '何云', '林月', '高星', '罗花'],
+  male: ['王伟', '李强', '张磊', '刘洋', '陈杰', '杨鹏', '赵飞', '黄军', '周勇', '吴志', '徐华', '孙龙', '马虎', '朱豹', '胡熊', '郭狼', '何猫', '林狗', '高猪', '罗牛'],
+}
+
+// 生成随机网名
+function generateNickname(gender: string): string {
+  const nameList = gender === '女' ? NICKNAMES.female : NICKNAMES.male
+  return nameList[Math.floor(Math.random() * nameList.length)]
+}
+
+// 生成随机真名
+function generateRealName(gender: string): string {
+  const nameList = gender === '女' ? REAL_NAMES.female : REAL_NAMES.male
   return nameList[Math.floor(Math.random() * nameList.length)]
 }
 
@@ -37,8 +49,11 @@ export class Creator {
 
     // 如果没有指定名字，根据性别生成
     if (!name) {
-      name = generateName(gender)
+      name = generateNickname(gender)
     }
+
+    // 生成真实姓名
+    const realName = generateRealName(gender)
 
     console.log(`[creator] 开始创建 ${name} 的人格...`)
 
@@ -64,6 +79,7 @@ export class Creator {
       metadata: {
         ...personalityData.metadata,
         gender,
+        realName,
       },
       partA: personalityData.partA || {
         overview: { type: 'relationship', timeline: [] },
