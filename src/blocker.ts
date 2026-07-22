@@ -369,15 +369,18 @@ export class Blocker {
         // 50% 只拉黑
         return { action: 'block', message: this.getScoldMessage() }
       }
-    } else if (this.data && this.data.disgustLevel >= 10) {
+    } else if (this.data && this.data.disgustLevel >= 30) {
       // 有点烦，可能骂人
-      if (random < 0.6) {
-        // 60% 骂人
+      if (random < 0.4) {
+        // 40% 骂人
         return { action: 'scold', message: this.getScoldMessage() }
       } else {
-        // 40% 忽略
+        // 60% 忽略
         return { action: 'ignore', message: '' }
       }
+    } else if (this.data && this.data.disgustLevel >= 10) {
+      // 轻微反感，已读不回
+      return { action: 'ignore', message: '' }
     }
     
     // 正常情况，忽略
