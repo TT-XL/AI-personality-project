@@ -190,7 +190,12 @@ AI-personality-project/
 | Agnes AI | agnes | agnes-2.0-flash |
 | OpenAI | openai | gpt-3.5-turbo |
 | DeepSeek | deepseek | deepseek-chat |
-| 智谱 | zhipu | glm-4 |
+| 智谱 (GLM) | zhipu | glm-4 |
+| 通义千问 | tongyi | qwen-turbo |
+| 文心一言 | wenxin | ernie-speed-128k |
+| 月之暗面 | moonshot | moonshot-v1-8k |
+| 零一万物 | lingyiwanwu | yi-large |
+| 自定义API | custom | 用户自定义 |
 
 ## 贡献
 
