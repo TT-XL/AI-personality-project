@@ -27,6 +27,11 @@ const PROVIDERS = [
   { name: 'OpenAI', value: 'openai', baseUrl: 'https://api.openai.com/v1', model: 'gpt-3.5-turbo' },
   { name: 'DeepSeek', value: 'deepseek', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
   { name: '智谱 (GLM)', value: 'zhipu', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4' },
+  { name: '通义千问', value: 'tongyi', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-turbo' },
+  { name: '文心一言', value: 'wenxin', baseUrl: 'https://aip.baidublatform.com/rpc/2.0/ai_custom/v1/wenxinworkshop', model: 'ernie-speed-128k' },
+  { name: '月之暗面', value: 'moonshot', baseUrl: 'https://api.moonshot.cn/v1', model: 'moonshot-v1-8k' },
+  { name: '零一万物', value: 'lingyiwanwu', baseUrl: 'https://api.lingyiwanwu.com/v1', model: 'yi-large' },
+  { name: '自定义API', value: 'custom', baseUrl: '', model: '' },
 ]
 
 async function main() {
@@ -126,6 +131,24 @@ async function setupAI() {
   process.env.AI_MODEL = provider.model
   console.log(`\n已选择: ${provider.name}`)
 
+  // 如果是自定义API，需要输入更多配置
+  if (provider.value === 'custom') {
+    const baseUrl = await question('请输入API地址 (输入0返回): ')
+    if (baseUrl === '0' || !baseUrl) {
+      console.log('已取消')
+      return
+    }
+    
+    const model = await question('请输入模型名称: ')
+    if (!model) {
+      console.log('已取消')
+      return
+    }
+    
+    process.env.AI_BASE_URL = baseUrl
+    process.env.AI_MODEL = model
+  }
+
   const apiKey = await question('请输入API密钥 (输入0返回): ')
   if (apiKey === '0' || !apiKey) {
     console.log('已取消')
@@ -135,7 +158,7 @@ async function setupAI() {
   process.env.AI_API_KEY = apiKey
   
   // 保存配置
-  configManager.setAI(provider.value, apiKey, provider.baseUrl, provider.model)
+  configManager.setAI(provider.value, apiKey, process.env.AI_BASE_URL, process.env.AI_MODEL)
   
   console.log('\n配置完成! 密钥已保存到本地')
 }
