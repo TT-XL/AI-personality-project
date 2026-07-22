@@ -165,9 +165,21 @@ ${p.partB.layer0.map(r => `- ${r}`).join('\n')}
             const response = JSON.parse(data)
             if (response.choices && response.choices[0]) {
               const choice = response.choices[0]
-              // 优先使用content，如果没有则尝试reasoning_content
-              const content = choice.message.content || choice.message.reasoning_content || ''
-              resolve(content)
+              // 获取实际回复内容
+              let content = choice.message.content || ''
+              
+              // 如果content为空，尝试从reasoning_content中提取
+              if (!content && choice.message.reasoning_content) {
+                // 提取最后一行作为回复
+                const lines = choice.message.reasoning_content.split('\n')
+                const lastLines = lines.slice(-5).join('\n')
+                content = lastLines
+              }
+              
+              // 清理内容：去掉开头的换行和空白
+              content = content.replace(/^\n+/, '').trim()
+              
+              resolve(content || '嗯')
             } else if (response.error) {
               reject(new Error(response.error.message || 'API错误'))
             } else {
