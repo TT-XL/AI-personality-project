@@ -1,8 +1,11 @@
 // AI人格项目 - 主入口（交互式菜单版）
 
 import * as readline from 'readline'
+import * as fs from 'fs'
+import * as path from 'path'
 import { creator } from './creator'
 import { chatAIEngine } from './chat-ai'
+import { blocker } from './blocker'
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -46,11 +49,12 @@ async function showMainMenu() {
   console.log('  2. 列出所有人格')
   console.log('  3. 与人格聊天')
   console.log('  4. 删除人格')
-  console.log('  5. 重新配置AI')
+  console.log('  5. 人格管理')
+  console.log('  6. 重新配置AI')
   console.log('  0. 退出程序')
   console.log('\n========================================\n')
 
-  const choice = await question('请选择 (0-5): ')
+  const choice = await question('请选择 (0-6): ')
 
   switch (choice) {
     case '1':
@@ -66,6 +70,9 @@ async function showMainMenu() {
       await handleDelete()
       break
     case '5':
+      await handleManagement()
+      break
+    case '6':
       await setupAI()
       break
     case '0':
@@ -290,6 +297,163 @@ async function handleDelete() {
       console.log(`\n已删除: ${slug}`)
     } else {
       console.log(`\n删除失败: ${slug}`)
+    }
+  } else {
+    console.log('\n已取消')
+  }
+}
+
+// 人格管理
+async function handleManagement() {
+  console.log('\n========================================')
+  console.log('           人格管理')
+  console.log('========================================\n')
+  console.log('  1. 查看所有人格状态')
+  console.log('  2. 清除拉黑/删除记录')
+  console.log('  3. 尝试重新添加被删除的人格')
+  console.log('  0. 返回主菜单')
+  console.log('\n========================================\n')
+
+  const choice = await question('请选择 (0-3): ')
+
+  switch (choice) {
+    case '1':
+      handleViewStatus()
+      break
+    case '2':
+      await handleClearBlock()
+      break
+    case '3':
+      await handleReaddPersonality()
+      break
+    case '0':
+      return
+    default:
+      console.log('\n无效选择')
+  }
+}
+
+// 查看所有人格状态
+function handleViewStatus() {
+  const slugs = creator.list()
+  
+  console.log('\n========================================')
+  console.log('           人格状态')
+  console.log('========================================\n')
+  
+  if (slugs.length === 0) {
+    console.log('  还没有创建任何人格')
+  } else {
+    slugs.forEach((slug, i) => {
+      const p = creator.get(slug)
+      blocker.load(slug)
+      const status = blocker.getStatus()
+      console.log(`  ${i + 1}. ${slug} - ${p?.description || '无描述'}`)
+      console.log(`     状态: ${status}`)
+    })
+  }
+  
+  console.log('\n========================================\n')
+}
+
+// 清除拉黑/删除记录
+async function handleClearBlock() {
+  const slugs = creator.list()
+  
+  if (slugs.length === 0) {
+    console.log('\n还没有创建任何人格')
+    return
+  }
+
+  console.log('\n========================================')
+  console.log('           清除拉黑记录')
+  console.log('========================================\n')
+  
+  slugs.forEach((slug, i) => {
+    const p = creator.get(slug)
+    blocker.load(slug)
+    const status = blocker.getStatus()
+    console.log(`  ${i + 1}. ${slug} - ${status}`)
+  })
+  console.log(`  0. 返回`)
+  console.log('\n========================================\n')
+
+  const choice = await question('选择要清除记录的人格编号: ')
+  
+  if (choice === '0') return
+
+  const index = parseInt(choice) - 1
+
+  if (index < 0 || index >= slugs.length) {
+    console.log('\n无效选择')
+    return
+  }
+
+  const slug = slugs[index]
+  blocker.load(slug)
+  blocker.clear()
+  console.log(`\n已清除 ${slug} 的拉黑记录`)
+}
+
+// 尝试重新添加被删除的人格
+async function handleReaddPersonality() {
+  // 查找被拉黑/删除的人格
+  const blocksDir = path.join(process.cwd(), 'blocks')
+  if (!fs.existsSync(blocksDir)) {
+    console.log('\n没有被拉黑/删除的人格')
+    return
+  }
+
+  const blockFiles = fs.readdirSync(blocksDir).filter(f => f.endsWith('.json'))
+  
+  if (blockFiles.length === 0) {
+    console.log('\n没有被拉黑/删除的人格')
+    return
+  }
+
+  console.log('\n========================================')
+  console.log('           重新添加人格')
+  console.log('========================================\n')
+  
+  blockFiles.forEach((file, i) => {
+    const slug = file.replace('.json', '')
+    blocker.load(slug)
+    const status = blocker.getStatus()
+    const canReadd = blocker.canBeReadded()
+    console.log(`  ${i + 1}. ${slug} - ${status}`)
+    console.log(`     可以重新添加: ${canReadd ? '是' : '否'}`)
+  })
+  console.log(`  0. 返回`)
+  console.log('\n========================================\n')
+
+  const choice = await question('选择要重新添加的人格编号: ')
+  
+  if (choice === '0') return
+
+  const index = parseInt(choice) - 1
+
+  if (index < 0 || index >= blockFiles.length) {
+    console.log('\n无效选择')
+    return
+  }
+
+  const slug = blockFiles[index].replace('.json', '')
+  blocker.load(slug)
+  
+  if (!blocker.canBeReadded()) {
+    console.log('\n这个人格无法重新添加（已被彻底删除）')
+    return
+  }
+
+  const confirm = await question(`确定要重新添加 "${slug}" 吗？(y/n): `)
+  
+  if (confirm.toLowerCase() === 'y') {
+    const result = blocker.tryReadd()
+    if (result.success) {
+      console.log(`\n已重新添加: ${slug}`)
+      console.log(`人格说: ${result.message}`)
+    } else {
+      console.log(`\n无法重新添加: ${result.message}`)
     }
   } else {
     console.log('\n已取消')

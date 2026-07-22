@@ -343,6 +343,62 @@ export class Blocker {
     return scoldMessages[Math.floor(Math.random() * scoldMessages.length)]
   }
 
+  // 检查是否可以重新添加
+  canBeReadded(): boolean {
+    if (!this.data) return false
+    
+    // 如果没有被拉黑/删除，不需要重新添加
+    if (!this.data.isBlocked && !this.data.isDeleted) {
+      return false
+    }
+    
+    // 如果是永久删除，不能重新添加
+    if (this.data.isPermanentlyDeleted) {
+      return false
+    }
+    
+    // 如果反感程度很高，不能重新添加
+    if (this.data.disgustLevel >= 80) {
+      return false
+    }
+    
+    return true
+  }
+
+  // 尝试重新添加
+  tryReadd(): { success: boolean; message: string } {
+    if (!this.data) {
+      return { success: false, message: '无数据' }
+    }
+    
+    // 如果没有被拉黑/删除
+    if (!this.data.isBlocked && !this.data.isDeleted) {
+      return { success: false, message: '没有被拉黑/删除' }
+    }
+    
+    // 如果是永久删除
+    if (this.data.isPermanentlyDeleted) {
+      return { success: false, message: '已被彻底删除，无法恢复' }
+    }
+    
+    // 如果反感程度很高
+    if (this.data.disgustLevel >= 80) {
+      return { success: false, message: '还是很生气，不想加回来' }
+    }
+    
+    // 重新添加
+    this.unblockByPersonality()
+    
+    // 根据反感程度返回不同消息
+    if (this.data.disgustLevel < 20) {
+      return { success: true, message: '好吧，再给你一次机会' }
+    } else if (this.data.disgustLevel < 40) {
+      return { success: true, message: '行吧，再聊聊看' }
+    } else {
+      return { success: true, message: '哼，别再让我失望了' }
+    }
+  }
+
   // 随机决定行为
   getRandomAction(message: string): { action: 'scold' | 'block' | 'delete' | 'ignore'; message: string } {
     const random = Math.random()
