@@ -16,6 +16,11 @@ const PROVIDERS: Record<string, { baseUrl: string; model: string }> = {
   deepseek: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
   zhipu: { baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4' },
   agnes: { baseUrl: 'https://apihub.agnes-ai.com/v1', model: 'agnes-2.0-flash' },
+  tongyi: { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-turbo' },
+  wenxin: { baseUrl: 'https://aip.baidublatform.com/rpc/2.0/ai_custom/v1/wenxinworkshop', model: 'ernie-speed-128k' },
+  moonshot: { baseUrl: 'https://api.moonshot.cn/v1', model: 'moonshot-v1-8k' },
+  lingyiwanwu: { baseUrl: 'https://api.lingyiwanwu.com/v1', model: 'yi-large' },
+  custom: { baseUrl: '', model: '' },
 }
 
 // 动态获取AI配置
