@@ -137,7 +137,7 @@ ${p.partB.layer0.map(r => `- ${r}`).join('\n')}
       model: config.model,
       messages,
       temperature: 0.8,
-      max_tokens: 1000,
+      max_tokens: 2000,
     })
 
     return new Promise((resolve, reject) => {

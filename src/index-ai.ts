@@ -228,7 +228,9 @@ async function chatMode() {
 
     if (!input) continue
 
+    process.stdout.write(`${name}: 思考中...`)
     const reply = await chatAIEngine.generateReply(input)
+    process.stdout.write('\r' + ' '.repeat(50) + '\r')
     console.log(`${name}: ${reply}\n`)
   }
 }
