@@ -307,6 +307,21 @@ export class Blocker {
     }
   }
 
+  // 获取骂人消息
+  getScoldMessage(): string {
+    const scoldMessages = [
+      '你有病吧',
+      '神经病',
+      '滚',
+      '卧槽你是不是有病',
+      '傻逼吧你',
+      '脑子有坑',
+      '有毛病',
+      '你脑子没问题吧',
+    ]
+    return scoldMessages[Math.floor(Math.random() * scoldMessages.length)]
+  }
+
   // 检查是否应该删除好友
   shouldDelete(): boolean {
     if (!this.data) return false

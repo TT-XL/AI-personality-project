@@ -229,16 +229,20 @@ ${learningSuggestions || '刚开始聊天，还在了解对方'}
       
       // 检查是否应该删除好友
       if (blocker.shouldDelete()) {
+        // 先骂人再删除
+        const scold = blocker.getScoldMessage()
         if (blocker.shouldDeletePermanently()) {
           blocker.deletePermanently()
-          return '对方已彻底删除你，无法恢复。'
+          return `${scold}，已彻底删除你。`
         } else {
           blocker.deleteTemporarily()
-          return '对方已删除你的好友。'
+          return `${scold}，已删除你。`
         }
       }
       
-      return blocker.getBlockMessage()
+      // 骂人再拉黑
+      const scold = blocker.getScoldMessage()
+      return scold
     }
 
     // 检查API密钥
