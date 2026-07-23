@@ -7,6 +7,7 @@ import { Personality, ChatMessage } from './types'
 import { creator } from './creator'
 import { learner } from './learner'
 import { blocker } from './blocker'
+import { relationshipManager } from './relationship'
 
 const SESSIONS_DIR = path.join(process.cwd(), 'sessions')
 
@@ -59,7 +60,11 @@ export class ChatAIEngine {
     // 加载拉黑数据
     blocker.load(slug)
     
+    // 加载关系数据
+    relationshipManager.load(slug)
+    
     console.log(`[chat-ai] 已加载人格: ${personality.name}`)
+    console.log(`[chat-ai] 关系状态: ${relationshipManager.getStatusDescription()}`)
     return true
   }
 
@@ -90,11 +95,7 @@ ${learningSuggestions || '刚开始聊天，还在了解对方'}
 
 ## 你们的关系
 - 你们是通过聊天匹配软件认识的，匹配到了对方
-- 你们刚匹配上不久，还在互相了解
-- 你对对方还不太熟悉，保持一定的警惕心
-- 你不会轻易相信陌生人，会观察对方的言行
-- 随着聊天增多，你会慢慢放下戒备
-- 如果对方让你不舒服，你会拉黑或删除好友
+${relationshipManager.getSystemPromptFragment().replace('## 你们的关系\n', '')}
 
 ## 情绪系统（重要！）
 你的情绪会随时变化，要根据对话内容自然反应：
@@ -305,6 +306,10 @@ ${learningSuggestions || '刚开始聊天，还在了解对方'}
       learner.learnEmotionalState(userMessage, aiReply)
       learner.save()
 
+      // 更新关系进度
+      const isPositive = this.isPositiveInteraction(userMessage, aiReply)
+      relationshipManager.increaseInteraction(isPositive)
+
       return aiReply
     } catch (error) {
       console.error('[chat-ai] API调用失败:', error)
@@ -500,6 +505,36 @@ ${learningSuggestions || '刚开始聊天，还在了解对方'}
     }
 
     return this.getRandomItem(['嗯', '哦', '好', '知道了', '是吗', '然后呢'])
+  }
+
+  // 判断是否是正面互动
+  private isPositiveInteraction(userMessage: string, aiReply: string): boolean {
+    const lowerMessage = userMessage.toLowerCase()
+    const lowerReply = aiReply.toLowerCase()
+
+    // 正面关键词
+    const positiveKeywords = ['谢谢', '感谢', '喜欢', '开心', '高兴', '哈哈', '嘿嘿', '不错', '好的', '嗯嗯']
+    
+    // 负面关键词
+    const negativeKeywords = ['滚', '烦', '讨厌', '不喜欢', '生气', '骂', '神经病', '有病']
+
+    // 检查用户消息
+    for (const keyword of positiveKeywords) {
+      if (lowerMessage.includes(keyword)) return true
+    }
+
+    // 检查AI回复（如果AI回复是友好的，说明互动是正面的）
+    for (const keyword of positiveKeywords) {
+      if (lowerReply.includes(keyword)) return true
+    }
+
+    // 检查负面关键词
+    for (const keyword of negativeKeywords) {
+      if (lowerMessage.includes(keyword) || lowerReply.includes(keyword)) return false
+    }
+
+    // 默认为正面互动
+    return true
   }
 
   private getRandomItem<T>(arr: T[]): T {
