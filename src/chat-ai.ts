@@ -323,6 +323,7 @@ ${memoryManager.getSystemPromptFragment()}
       return aiReply
     } catch (error) {
       console.error('[chat-ai] API调用失败:', error)
+      // 如果是超时或网络错误，使用本地回复
       return this.getLocalReply(userMessage)
     }
   }
@@ -445,6 +446,7 @@ ${memoryManager.getSystemPromptFragment()}
           'Authorization': `Bearer ${config.apiKey}`,
           'Content-Length': Buffer.byteLength(requestBody),
         },
+        timeout: 30000, // 30秒超时
       }
 
       const req = https.request(options, (res) => {
@@ -482,6 +484,12 @@ ${memoryManager.getSystemPromptFragment()}
       })
 
       req.on('error', reject)
+      
+      req.on('timeout', () => {
+        req.destroy()
+        reject(new Error('请求超时'))
+      })
+      
       req.write(requestBody)
       req.end()
     })

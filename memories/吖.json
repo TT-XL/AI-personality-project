@@ -1,0 +1,17 @@
+{
+  "slug": "吖",
+  "conversations": [
+    {
+      "timestamp": "2026-07-23T11:43:24.553Z",
+      "userMessage": "hi",
+      "aiReply": "嗯？谁啊",
+      "topic": "日常",
+      "mood": "正常"
+    }
+  ],
+  "keyTopics": [
+    "日常"
+  ],
+  "importantEvents": [],
+  "userPreferences": []
+}
