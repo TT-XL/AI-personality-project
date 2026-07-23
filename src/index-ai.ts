@@ -348,21 +348,25 @@ async function handleManagement() {
   console.log('           人格管理')
   console.log('========================================\n')
   console.log('  1. 查看所有人格状态')
-  console.log('  2. 清除拉黑/删除记录')
-  console.log('  3. 尝试重新添加被删除的人格')
+  console.log('  2. 查看聊天记录')
+  console.log('  3. 清除拉黑/删除记录')
+  console.log('  4. 尝试重新添加被删除的人格')
   console.log('  0. 返回主菜单')
   console.log('\n========================================\n')
 
-  const choice = await question('请选择 (0-3): ')
+  const choice = await question('请选择 (0-4): ')
 
   switch (choice) {
     case '1':
       handleViewStatus()
       break
     case '2':
-      await handleClearBlock()
+      await handleViewHistory()
       break
     case '3':
+      await handleClearBlock()
+      break
+    case '4':
       await handleReaddPersonality()
       break
     case '0':
@@ -393,6 +397,67 @@ function handleViewStatus() {
   }
   
   console.log('\n========================================\n')
+}
+
+// 查看聊天记录
+async function handleViewHistory() {
+  const slugs = creator.list()
+  
+  if (slugs.length === 0) {
+    console.log('\n还没有创建任何人格')
+    return
+  }
+
+  console.log('\n========================================')
+  console.log('           查看聊天记录')
+  console.log('========================================\n')
+  
+  slugs.forEach((slug, i) => {
+    const p = creator.get(slug)
+    console.log(`  ${i + 1}. ${slug} - ${p?.description || '无描述'}`)
+  })
+  console.log(`  0. 返回`)
+  console.log('\n========================================\n')
+
+  const choice = await question('选择要查看的人格编号: ')
+  
+  if (choice === '0') return
+
+  const index = parseInt(choice) - 1
+
+  if (index < 0 || index >= slugs.length) {
+    console.log('\n无效选择')
+    return
+  }
+
+  const slug = slugs[index]
+  
+  // 读取记忆文件
+  const memoryPath = path.join(process.cwd(), 'memories', `${slug}.json`)
+  if (!fs.existsSync(memoryPath)) {
+    console.log('\n没有聊天记录')
+    return
+  }
+
+  const memoryData = JSON.parse(fs.readFileSync(memoryPath, 'utf-8'))
+  
+  console.log('\n========================================')
+  console.log(`           ${slug} 的聊天记录`)
+  console.log('========================================\n')
+  
+  if (memoryData.conversations.length === 0) {
+    console.log('  没有聊天记录')
+  } else {
+    memoryData.conversations.forEach((conv: any, i: number) => {
+      const time = new Date(conv.timestamp).toLocaleString()
+      console.log(`  [${time}]`)
+      console.log(`  用户: ${conv.userMessage}`)
+      console.log(`  ${slug}: ${conv.aiReply}`)
+      console.log()
+    })
+  }
+  
+  console.log('========================================\n')
 }
 
 // 清除拉黑/删除记录
