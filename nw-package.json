@@ -1,0 +1,12 @@
+{
+  "name": "ai-companion-nurturing",
+  "version": "1.0.0",
+  "main": "public/index.html",
+  "window": {
+    "title": "AI陪伴养成",
+    "width": 450,
+    "height": 750,
+    "resizable": false,
+    "fullscreen": false
+  }
+}
