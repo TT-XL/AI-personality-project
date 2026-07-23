@@ -8,6 +8,7 @@ import { creator } from './creator'
 import { learner } from './learner'
 import { blocker } from './blocker'
 import { relationshipManager } from './relationship'
+import { memoryManager } from './memory'
 
 const SESSIONS_DIR = path.join(process.cwd(), 'sessions')
 
@@ -63,8 +64,12 @@ export class ChatAIEngine {
     // 加载关系数据
     relationshipManager.load(slug)
     
+    // 加载记忆数据
+    memoryManager.load(slug)
+    
     console.log(`[chat-ai] 已加载人格: ${personality.name}`)
     console.log(`[chat-ai] 关系状态: ${relationshipManager.getStatusDescription()}`)
+    console.log(`[chat-ai] 记忆: ${memoryManager.getMemorySummary().split('\n')[0]}`)
     return true
   }
 
@@ -96,6 +101,8 @@ ${learningSuggestions || '刚开始聊天，还在了解对方'}
 ## 你们的关系
 - 你们是通过聊天匹配软件认识的，匹配到了对方
 ${relationshipManager.getSystemPromptFragment().replace('## 你们的关系\n', '')}
+
+${memoryManager.getSystemPromptFragment()}
 
 ## 情绪系统（重要！）
 你的情绪会随时变化，要根据对话内容自然反应：
@@ -309,6 +316,9 @@ ${relationshipManager.getSystemPromptFragment().replace('## 你们的关系\n', 
       // 更新关系进度
       const isPositive = this.isPositiveInteraction(userMessage, aiReply)
       relationshipManager.increaseInteraction(isPositive)
+
+      // 保存到记忆
+      memoryManager.addConversation(userMessage, aiReply)
 
       return aiReply
     } catch (error) {
